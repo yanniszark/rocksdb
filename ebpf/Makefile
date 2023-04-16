@@ -11,6 +11,8 @@ LDFLAGS = -L/usr/lib64
 
 test: rocksdb_parser.h ebpf.h
 
+test_bpfof: rocksdb_parser.h ebpf.h
+
 parser.o: parser.c rocksdb_parser.h data_block_footer.h ebpf.h
 	$(CLANG) -S -g\
 		-target bpf \
