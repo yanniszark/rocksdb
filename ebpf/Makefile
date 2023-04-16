@@ -41,7 +41,7 @@ read.o: read.c ebpf.h
 		-O2 -emit-llvm -c -g -o ${@:.o=.ll} $<
 	$(LLC) -march=bpf -filetype=obj -o $@ ${@:.o=.ll}
 
-all: test parser.o
+all: test test_bpfof parser.o
 
 clean:
 	rm -f -- *.o *.ll test

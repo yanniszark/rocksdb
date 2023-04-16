@@ -82,41 +82,45 @@ int main(int argc, char **argv) {
     if (posix_memalign((void **) &scratch_buf, EBPF_SCRATCH_BUFFER_SIZE, EBPF_SCRATCH_BUFFER_SIZE) != 0)
         die("posix_memalign() failed");
 
-    memset(data_buf, 0, EBPF_SCRATCH_BUFFER_SIZE);
-    memset(scratch_buf, 0, EBPF_SCRATCH_BUFFER_SIZE);
-
-    memset(&ctx, 0, sizeof(ctx));
-    ctx.footer_len = st.st_size - offset;
-    printf("Footer len: %lu\n", ctx.footer_len);
-    ctx.stage = kFooterStage;
-    strncpy((char *)&ctx.key, key, strlen(key) + 1);
-    memcpy(scratch_buf, &ctx, sizeof(ctx));
     sleep(2);
 
-    long ret = syscall(SYS_READ_XRP, sst_fd, data_buf, 4096, offset, bpf_fd, scratch_buf);
+    for (int i = 0; i < 100000; i++) {
+        memset(data_buf, 0, EBPF_SCRATCH_BUFFER_SIZE);
+        memset(scratch_buf, 0, EBPF_SCRATCH_BUFFER_SIZE);
 
-    printf("Return: %ld\n", ret);
-    printf("%s\n", strerror(errno));
+        memset(&ctx, 0, sizeof(ctx));
+        ctx.footer_len = st.st_size - offset;
+        printf("Footer len: %lu\n", ctx.footer_len);
+        ctx.stage = kFooterStage;
+        sprintf(ctx.key, "%015d", i);
+        memcpy(scratch_buf, &ctx, sizeof(ctx));
+        printf("Key: %s\n", ctx.key);
 
-    if (ret < 0)
-        die("read_xrp() failed");
+        long ret = syscall(SYS_READ_XRP, sst_fd, data_buf, 4096, offset, bpf_fd, scratch_buf);
 
-    if ((out_fd = open("outfile", O_RDWR | O_CREAT | O_TRUNC, 0666)) == -1)
-        die("open() failed");
+        printf("Return: %ld\n", ret);
+        printf("%s\n", strerror(errno));
 
-    if (write(out_fd, data_buf, EBPF_DATA_BUFFER_SIZE) == -1)
-        die("write() failed");
+        if (ret < 0)
+            die("read_xrp() failed");
 
-    ctx = *(struct rocksdb_ebpf_context *)scratch_buf;
+        if ((out_fd = open("outfile", O_RDWR | O_CREAT | O_TRUNC, 0666)) == -1)
+            die("open() failed");
 
-    if (ctx.found == 1)
-        printf("Value found: %s\n", ctx.data_context.value);
-    else
-        printf("Value not found\n");
+        if (write(out_fd, data_buf, EBPF_DATA_BUFFER_SIZE) == -1)
+            die("write() failed");
+
+        ctx = *(struct rocksdb_ebpf_context *)scratch_buf;
+
+        if (ctx.found == 1)
+            printf("Value found: %s\n", ctx.data_context.value);
+        else
+            printf("Value not found\n");
+    }
     free(scratch_buf);
     free(data_buf);
 
     close(out_fd);
-    close(sst_fd);
+    // close(sst_fd);
     close(bpf_fd);
 }
