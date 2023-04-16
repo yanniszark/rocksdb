@@ -93,6 +93,12 @@ Status XRPContext::Get(const Slice &key, Slice &value, GetContext *get_context, 
         request_size = 4096;
     }
 
+    if (getenv("ROCKSDB_XRP_DEBUG") != NULL) {
+        std::cout << "XRPContext: request size " << request_size << std::endl;
+        std::cout << "XRPContext: file fd " << start_file.fd << std::endl;
+        std::cout << "XRPContext: file offset " << start_file.offset << std::endl;
+        std::cout << "XRPContext: stage " << ctx->stage << std::endl;
+    }
     long ret = syscall(SYS_READ_XRP, start_file.fd, data_buf, request_size, start_file.offset, bpf_fd, scratch_buf);
 
     if (ret < 0)
@@ -181,7 +187,7 @@ uint32_t XRPContext::GetSampleRate() {
     // random default sample rate
     uint32_t rate = 100;
 
-    const char* sample_var = std::getenv("XRP_SAMPLE_RATE"); 
+    const char* sample_var = std::getenv("XRP_SAMPLE_RATE");
     if (sample_var != nullptr) {
         try {
             rate = std::stoi(sample_var);
